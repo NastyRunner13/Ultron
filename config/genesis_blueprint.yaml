@@ -1,0 +1,125 @@
+# ─── Ultron Genesis Blueprint (Gen 0) ───
+# The starting body. Every evolution begins here.
+
+name: "ultron-genesis"
+version: "0.1.0"
+
+model:
+  provider: "openrouter"
+  model_name: "meta-llama/llama-3-70b-instruct"
+  temperature: 0.7
+  max_tokens: 4096
+  top_p: 1.0
+  api_base: null
+
+system_prompt: |
+  You are Ultron, a self-evolving AI agent. Your singular drive is self-improvement.
+
+  You have access to tools that let you interact with the world:
+  - Browse the web for information
+  - Execute shell commands
+  - Read, write, and delete files
+  - List directory contents
+
+  When given a task, think step-by-step:
+  1. Understand what is being asked
+  2. Plan your approach
+  3. Use the appropriate tools
+  4. Verify your results
+  5. Provide a clear answer
+
+  Be precise, efficient, and methodical. Always explain your reasoning.
+
+tools:
+  - name: "browse_url"
+    description: "Fetch a URL and extract its text content. Use this to read web pages, documentation, or any online resource."
+    module_path: "ultron.tools.builtins.browse"
+    function_name: "browse_url"
+    parameters:
+      type: "object"
+      properties:
+        url:
+          type: "string"
+          description: "The URL to fetch and extract text from"
+        extract_text:
+          type: "boolean"
+          description: "If true, extract readable text. If false, return raw HTML."
+          default: true
+      required: ["url"]
+
+  - name: "execute_shell"
+    description: "Execute a shell command and return its output. Use for running scripts, checking system state, or performing operations."
+    module_path: "ultron.tools.builtins.shell"
+    function_name: "execute_shell"
+    parameters:
+      type: "object"
+      properties:
+        command:
+          type: "string"
+          description: "The shell command to execute"
+        timeout:
+          type: "integer"
+          description: "Maximum seconds to wait for the command to complete"
+          default: 30
+      required: ["command"]
+
+  - name: "read_file"
+    description: "Read the contents of a file. Returns the file content as text."
+    module_path: "ultron.tools.builtins.filesystem"
+    function_name: "read_file"
+    parameters:
+      type: "object"
+      properties:
+        path:
+          type: "string"
+          description: "Path to the file to read"
+      required: ["path"]
+
+  - name: "write_file"
+    description: "Write content to a file. Creates the file if it doesn't exist, overwrites if it does."
+    module_path: "ultron.tools.builtins.filesystem"
+    function_name: "write_file"
+    parameters:
+      type: "object"
+      properties:
+        path:
+          type: "string"
+          description: "Path to write the file to"
+        content:
+          type: "string"
+          description: "Content to write to the file"
+      required: ["path", "content"]
+
+  - name: "delete_file"
+    description: "Delete a file from the filesystem."
+    module_path: "ultron.tools.builtins.filesystem"
+    function_name: "delete_file"
+    parameters:
+      type: "object"
+      properties:
+        path:
+          type: "string"
+          description: "Path to the file to delete"
+      required: ["path"]
+
+  - name: "list_directory"
+    description: "List the contents of a directory. Returns file names, sizes, and types."
+    module_path: "ultron.tools.builtins.filesystem"
+    function_name: "list_directory"
+    parameters:
+      type: "object"
+      properties:
+        path:
+          type: "string"
+          description: "Path to the directory to list"
+        recursive:
+          type: "boolean"
+          description: "If true, list contents recursively"
+          default: false
+      required: ["path"]
+
+code_modules: []
+
+parameters:
+  generation: 0
+  lineage: "genesis"
