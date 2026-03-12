@@ -1,0 +1,55 @@
+# ─── Ultron Global Settings ───
+
+# Token budget per evolution cycle
+token_budget: 100000
+
+# LLM defaults
+default_model: "openrouter/meta-llama/llama-3-70b-instruct"
+default_temperature: 0.7
+default_max_tokens: 4096
+
+# Agent runtime
+max_agent_steps: 20           # Max ReAct loop iterations per task
+agent_timeout_seconds: 300    # Hard timeout for a single agent run
+
+# Evolution thresholds
+merge_improvement_threshold: 0.05   # Branch must be ≥5% better to merge
+kill_after_n_failures: 3            # Kill branch after N consecutive score drops
+max_active_branches: 5              # Max experimental branches alive at once
+
+# Arena
+arena_runs_per_benchmark: 3         # Run each benchmark N times, take median
+arena_timeout_per_task: 60          # Seconds per Arena task
+
+# Data paths
+data_dir: "./data"
+
+# Logging
+log_level: "INFO"
+log_file: null                      # Set to a path to also log to file
+
+# Shell tool safety
+shell_blocked_commands:
+  - "rm -rf /"
+  - "format"
+  - "del /f /s /q"
+  - "shutdown"
+  - "reboot"
+  - "mkfs"
+  - ":(){:|:&};:"
+
+shell_timeout_seconds: 30
+shell_max_output_chars: 10000
+
+# File tool safety
+file_allowed_extensions:
+  - ".py"
+  - ".yaml"
+  - ".yml"
+  - ".json"
+  - ".md"
+  - ".txt"
+  - ".toml"
+  - ".cfg"
+  - ".ini"
+  - ".csv"
