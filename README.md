@@ -6,9 +6,33 @@ Ultron is an experimental AI agent that improves itself over time using a Git-li
 
 ---
 
+## Quick Start
+
+```bash
+# Prerequisites: Python 3.11+, uv
+
+# Install dependencies
+uv sync --all-extras
+
+# Copy and configure your API key
+cp .env.example .env
+# Edit .env and add at least one provider key (OpenRouter, OpenAI, Anthropic, Groq, or Ollama)
+
+# Run a single task
+uv run python -m ultron.main --task "List the files in the current directory"
+
+# Interactive mode
+uv run python -m ultron.main
+
+# Run tests
+uv run pytest tests/ -v
+```
+
+---
+
 ## The Core Idea
 
-Most AI agents are static. You configure them once and they stay that way. Linage treats the agent's configuration — its model, system prompt, tools, and self-written code — as a living artifact that can be branched, mutated, evaluated, and evolved. The result is an agent with a full evolutionary lineage: a record of every version of itself, why each change was made, and what was learned from every failure.
+Most AI agents are static. You configure them once and they stay that way. Ultron treats the agent's configuration — its model, system prompt, tools, and self-written code — as a living artifact that can be branched, mutated, evaluated, and evolved. The result is an agent with a full evolutionary lineage: a record of every version of itself, why each change was made, and what was learned from every failure.
 
 ```
 main:  C0 ─── C1 ─── C2 ──────────────── C5 (merge) ─── C6
@@ -24,7 +48,7 @@ main:  C0 ─── C1 ─── C2 ──────────────�
 
 ## Key Concepts
 
-**Body** — A fully serializable agent configuration: LLM model, system prompt, tools, and self-written code modules. The thing that evolves.
+**Body (Blueprint)** — A fully serializable agent configuration: LLM model, system prompt, tools, and self-written code modules. Defined as a Pydantic v2 model with YAML/JSON serialization, content hashing, and structural diffing. The thing that evolves.
 
 **Consciousness** — The persistent identity that survives body swaps. Holds long-term memory, goals, and the reasoning engine that decides *how* to evolve.
 
@@ -42,24 +66,45 @@ main:  C0 ─── C1 ─── C2 ──────────────�
 
 ```
 ultron/
-  config/
-    genesis_blueprint.yaml     # Gen 0 — the starting body
-    arena_benchmarks.yaml      # Benchmark definitions (5 tiers)
-    settings.yaml              # Budget, thresholds, global config
-  ultron/
-    main.py                    # The evolution loop
-    consciousness/             # Memory, identity, goals, dream state
-    body/                      # Blueprint schema (Pydantic) + Body Factory
-    tree/                      # Evolution tree: commits, branches, merge, diff, bisect
-    evolution/                 # Reflection, mutation generators, tournament, journal
-    arena/                     # Benchmark runner, scorer, leaderboard, skill tree
-    tools/                     # Built-in tools + directory for self-written tools
-    dashboard/                 # Streamlit visualizer
-  data/
-    tree/                      # Commit and branch storage
-    memory/                    # ChromaDB vector store
-    postmortems/               # Dead branch postmortems (JSON)
-    ultron.db                  # SQLite (tree, scores, leaderboard, skill tree)
+├── core/
+│   ├── settings.py              # YAML + env var config loader (Pydantic)
+│   └── logging.py               # Loguru + Rich structured logging
+├── body/
+│   ├── blueprint.py             # Blueprint, ModelConfig, ToolSpec schemas
+│   ├── llm.py                   # Async LiteLLM client (multi-provider, retry, token tracking)
+│   ├── agent.py                 # ReAct loop (reason → tool call → observe → respond)
+│   └── factory.py               # BodyFactory — Blueprint → working AgentBody
+├── tools/
+│   ├── registry.py              # Dynamic tool import, async execution, OpenAI format
+│   └── builtins/
+│       ├── browse.py            # Async URL fetch + text extraction (httpx + BS4)
+│       ├── shell.py             # Async subprocess with blocked-command safety
+│       └── filesystem.py        # Async read/write/delete/list (aiofiles)
+├── main.py                      # CLI entry point (single task + interactive mode)
+└── __main__.py                  # python -m ultron
+config/
+├── genesis_blueprint.yaml       # Gen 0 body — default model + all built-in tools
+└── settings.yaml                # Token budgets, safety rules, thresholds
+tests/
+├── test_blueprint.py            # Schema serialization, hashing, diffing
+├── test_tools.py                # Registry, built-in tool execution, safety
+└── test_agent.py                # ReAct loop, LLM client, token tracking
+```
+
+### Planned (Future Phases)
+
+```
+ultron/
+├── consciousness/               # Memory, identity, goals, dream state
+├── tree/                        # Evolution tree: commits, branches, merge, diff, bisect
+├── evolution/                   # Reflection, mutation generators, tournament, journal
+├── arena/                       # Benchmark runner, scorer, leaderboard, skill tree
+└── dashboard/                   # Streamlit visualizer
+data/
+├── tree/                        # Commit and branch storage
+├── memory/                      # ChromaDB vector store
+├── postmortems/                 # Dead branch postmortems (JSON)
+└── ultron.db                    # SQLite (tree, scores, leaderboard, skill tree)
 ```
 
 ---
@@ -79,27 +124,44 @@ Each iteration of the main loop:
 
 ---
 
+## Built-in Tools
+
+| Tool | Description |
+|---|---|
+| `browse_url` | Fetch a URL and extract readable text (async httpx + BeautifulSoup) |
+| `execute_shell` | Run shell commands with blocked-command safety and timeout |
+| `read_file` | Read file contents asynchronously |
+| `write_file` | Write content to a file (creates parent dirs) |
+| `delete_file` | Delete a file from the filesystem |
+| `list_directory` | List directory contents with sizes and timestamps |
+
+All tools are **async**, dynamically imported at runtime, and automatically converted to OpenAI function-calling format for LLM integration.
+
+---
+
 ## Tech Stack
 
 | Layer | Tool |
 |---|---|
-| Language | Python 3.11+ |
+| Language | Python 3.11+ (fully async) |
 | Package management | uv |
-| LLM abstraction | LiteLLM (OpenAI, Anthropic, Ollama, Groq) |
+| LLM abstraction | LiteLLM (OpenRouter, OpenAI, Anthropic, Ollama, Groq) |
 | Data models | Pydantic v2 |
 | Structured storage | SQLite via SQLModel |
 | Vector memory | ChromaDB |
-| Loop orchestration | LangGraph |
-| Code sandbox | E2B |
+| HTTP client | httpx (async) |
+| File I/O | aiofiles (async) |
 | Terminal output | Rich + Loguru |
-| Dashboard | Streamlit + Plotly |
+| Testing | pytest + pytest-asyncio |
+| Linting | Ruff |
+| Dashboard *(planned)* | Streamlit + Plotly |
 
 ---
 
 ## Roadmap
 
-- [ ] **Phase 1 — Foundation**: Project setup, Blueprint schema, Body Factory, LiteLLM integration
-- [ ] **Phase 2 — Arena**: Benchmark suite, scorer, runner, leaderboard, skill tree
+- [x] **Phase 1 — Foundation**: Project setup, Blueprint schema, Body Factory, LiteLLM integration, built-in tools, async agent runtime
+- [ ] **Phase 2 — Arena**: Benchmark suite (5 tiers), scorer, runner, leaderboard, skill tree
 - [ ] **Phase 3 — Consciousness**: ChromaDB memory, failure memory, identity and goals
 - [ ] **Phase 4 — Evolution Tree**: Commit store, branch manager, merge, kill, cherry-pick, diff, bisect, tag
 - [ ] **Phase 5 — Evolution Engine**: Reflection, mutation generators, inner voice, tournament mode
@@ -110,7 +172,7 @@ Each iteration of the main loop:
 
 ## Status
 
-Early design stage. The architecture is defined. Implementation starts with Phase 1.
+**Phase 1 complete.** The foundation is built — Ultron can load a blueprint, create an agent body, and execute tasks using LLM + tools via an async ReAct loop. 40 tests passing.
 
 ---
 
@@ -118,7 +180,7 @@ Early design stage. The architecture is defined. Implementation starts with Phas
 
 > Dead branches are not failures. They are lessons.
 
-Every agent architecture eventually faces the question: what do you do when an improvement makes things worse? Most systems silently overwrite the previous state. Linage keeps everything — the failed branches, the postmortems, the reasoning behind each decision — and uses that history to inform every future evolution attempt. The lineage *is* the intelligence.
+Every agent architecture eventually faces the question: what do you do when an improvement makes things worse? Most systems silently overwrite the previous state. Ultron keeps everything — the failed branches, the postmortems, the reasoning behind each decision — and uses that history to inform every future evolution attempt. The lineage *is* the intelligence.
 
 ---
 
