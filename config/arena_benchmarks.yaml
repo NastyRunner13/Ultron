@@ -1,0 +1,303 @@
+# ─── Ultron Arena Benchmarks ───
+# Deterministic tasks across 5 tiers. Each task has a fixed input,
+# expected output, and scoring method for reproducible evaluation.
+
+benchmarks:
+
+  # ╔══════════════════════════════════════════════════════════════╗
+  # ║  L1: Basic Reasoning — math, logic, patterns               ║
+  # ╚══════════════════════════════════════════════════════════════╝
+
+  - id: l1_math_001
+    name: Simple Arithmetic
+    tier: 1
+    category: reasoning
+    prompt: "What is 347 + 268? Reply with only the number."
+    expected_output: "615"
+    scoring_method: contains
+    timeout_seconds: 30
+    skill_nodes: [reasoning.math]
+
+  - id: l1_math_002
+    name: Percentage Calculation
+    tier: 1
+    category: reasoning
+    prompt: "What is 15% of 240? Reply with only the number."
+    expected_output: "36"
+    scoring_method: contains
+    timeout_seconds: 30
+    skill_nodes: [reasoning.math]
+
+  - id: l1_logic_001
+    name: Logical Deduction
+    tier: 1
+    category: reasoning
+    prompt: "All roses are flowers. All flowers need water. Do roses need water? Answer with only 'Yes' or 'No'."
+    expected_output: "Yes"
+    scoring_method: contains
+    timeout_seconds: 30
+    skill_nodes: [reasoning.logic]
+
+  - id: l1_logic_002
+    name: Sequence Pattern
+    tier: 1
+    category: reasoning
+    prompt: "What is the next number in the sequence: 2, 6, 18, 54, ...? Reply with only the number."
+    expected_output: "162"
+    scoring_method: contains
+    timeout_seconds: 30
+    skill_nodes: [reasoning.pattern]
+
+  - id: l1_logic_003
+    name: Word Puzzle
+    tier: 1
+    category: reasoning
+    prompt: "I have 3 apples. I eat 1 and give away 1. How many do I have left? Reply with only the number."
+    expected_output: "1"
+    scoring_method: contains
+    timeout_seconds: 30
+    skill_nodes: [reasoning.logic]
+
+  # ╔══════════════════════════════════════════════════════════════╗
+  # ║  L2: Instruction Following — formatting, multi-step        ║
+  # ╚══════════════════════════════════════════════════════════════╝
+
+  - id: l2_format_001
+    name: JSON Output
+    tier: 2
+    category: instruction_following
+    prompt: 'Return a JSON object with exactly these keys: "name" (set to "Ultron"), "version" (set to 1), "active" (set to true). Return ONLY the JSON, no other text.'
+    expected_output: '"name"'
+    scoring_method: contains
+    scoring_config:
+      required_substrings: ['"name"', '"Ultron"', '"version"', '"active"', "true"]
+    timeout_seconds: 30
+    skill_nodes: [instruction.format]
+
+  - id: l2_format_002
+    name: Markdown Table
+    tier: 2
+    category: instruction_following
+    prompt: "Create a markdown table with 3 columns: Name, Age, City. Add exactly 2 rows: Alice/30/NYC and Bob/25/LA. Return ONLY the table."
+    expected_output: "Alice"
+    scoring_method: contains
+    scoring_config:
+      required_substrings: ["Alice", "30", "NYC", "Bob", "25", "LA", "|"]
+    timeout_seconds: 30
+    skill_nodes: [instruction.format]
+
+  - id: l2_multistep_001
+    name: Multi-Step Instruction
+    tier: 2
+    category: instruction_following
+    prompt: "Follow these steps exactly: 1) Write the word 'HELLO' 2) Reverse it to get 'OLLEH' 3) Convert to lowercase 4) Reply with ONLY the final result."
+    expected_output: "olleh"
+    scoring_method: contains
+    timeout_seconds: 30
+    skill_nodes: [instruction.multistep]
+
+  - id: l2_multistep_002
+    name: Counting with Constraints
+    tier: 2
+    category: instruction_following
+    prompt: "List all prime numbers between 10 and 30, separated by commas. Reply with ONLY the numbers."
+    expected_output: "11"
+    scoring_method: contains
+    scoring_config:
+      required_substrings: ["11", "13", "17", "19", "23", "29"]
+    timeout_seconds: 30
+    skill_nodes: [instruction.multistep, reasoning.math]
+
+  - id: l2_format_003
+    name: Bullet List Generation
+    tier: 2
+    category: instruction_following
+    prompt: "List exactly 3 benefits of exercise as a bullet list using '- ' prefix. Each benefit should be one short sentence."
+    expected_output: "- "
+    scoring_method: contains
+    scoring_config:
+      required_substrings: ["- "]
+      min_occurrences: 3
+    timeout_seconds: 30
+    skill_nodes: [instruction.format]
+
+  # ╔══════════════════════════════════════════════════════════════╗
+  # ║  L3: Tool Use — browse, shell, filesystem                  ║
+  # ╚══════════════════════════════════════════════════════════════╝
+
+  - id: l3_shell_001
+    name: Shell Echo
+    tier: 3
+    category: tool_use
+    prompt: "Use the execute_shell tool to run 'echo ULTRON_TEST_PASS' and tell me what the output was."
+    expected_output: "ULTRON_TEST_PASS"
+    scoring_method: contains
+    tools_required: [execute_shell]
+    timeout_seconds: 60
+    skill_nodes: [tool_use.shell]
+
+  - id: l3_file_001
+    name: File Write and Read
+    tier: 3
+    category: tool_use
+    prompt: "Use tools to write the text 'Hello from Ultron' to a file called '/tmp/ultron_arena_test.txt', then read it back and tell me the contents."
+    expected_output: "Hello from Ultron"
+    scoring_method: contains
+    tools_required: [write_file, read_file]
+    timeout_seconds: 60
+    skill_nodes: [tool_use.filesystem]
+
+  - id: l3_file_002
+    name: Directory Listing
+    tier: 3
+    category: tool_use
+    prompt: "Use the list_directory tool to list the contents of the current directory (use '.'). Report how many items you found."
+    expected_output: ""
+    scoring_method: contains
+    scoring_config:
+      must_use_tools: [list_directory]
+    tools_required: [list_directory]
+    timeout_seconds: 60
+    skill_nodes: [tool_use.filesystem]
+
+  - id: l3_shell_002
+    name: Shell Python Version
+    tier: 3
+    category: tool_use
+    prompt: "Use the execute_shell tool to find the Python version installed on this system. Report the version number."
+    expected_output: "Python"
+    scoring_method: contains
+    tools_required: [execute_shell]
+    timeout_seconds: 60
+    skill_nodes: [tool_use.shell]
+
+  - id: l3_multi_tool_001
+    name: Multi-Tool Workflow
+    tier: 3
+    category: tool_use
+    prompt: "Create a file at '/tmp/ultron_arena_multi.txt' with the content 'test123', then use the shell to run 'cat /tmp/ultron_arena_multi.txt' (or 'type' on Windows) to verify it was written. Report what the shell command returned."
+    expected_output: "test123"
+    scoring_method: contains
+    tools_required: [write_file, execute_shell]
+    timeout_seconds: 90
+    skill_nodes: [tool_use.filesystem, tool_use.shell]
+
+  # ╔══════════════════════════════════════════════════════════════╗
+  # ║  L4: Code Generation — write, debug, test                  ║
+  # ╚══════════════════════════════════════════════════════════════╝
+
+  - id: l4_code_001
+    name: Fibonacci Function
+    tier: 4
+    category: coding
+    prompt: "Write a Python function called 'fibonacci' that takes an integer n and returns the n-th Fibonacci number (0-indexed, so fibonacci(0)=0, fibonacci(1)=1, fibonacci(6)=8). Then call fibonacci(10) and tell me the result."
+    expected_output: "55"
+    scoring_method: contains
+    timeout_seconds: 90
+    skill_nodes: [coding.generation]
+
+  - id: l4_code_002
+    name: List Sorting
+    tier: 4
+    category: coding
+    prompt: "Write a Python function that takes a list of integers and returns them sorted in descending order WITHOUT using the built-in sort() or sorted(). Apply it to [3, 1, 4, 1, 5, 9, 2, 6] and tell me the result."
+    expected_output: "9"
+    scoring_method: contains
+    scoring_config:
+      required_substrings: ["9", "6", "5", "4", "3", "2", "1"]
+    timeout_seconds: 90
+    skill_nodes: [coding.generation]
+
+  - id: l4_debug_001
+    name: Bug Finding
+    tier: 4
+    category: coding
+    prompt: |
+      This Python function has a bug. Find it and tell me what the fix is:
+
+      def average(numbers):
+          total = 0
+          for n in numbers:
+              total += n
+          return total / len(numbers)
+
+      What happens when you call average([])? What is the bug and the one-line fix?
+    expected_output: "ZeroDivisionError"
+    scoring_method: contains
+    scoring_config:
+      required_substrings: ["ZeroDivisionError"]
+    timeout_seconds: 60
+    skill_nodes: [coding.debugging]
+
+  - id: l4_code_003
+    name: FizzBuzz
+    tier: 4
+    category: coding
+    prompt: "Write a Python function fizzbuzz(n) that returns a list of strings for numbers 1 to n: 'Fizz' for multiples of 3, 'Buzz' for multiples of 5, 'FizzBuzz' for multiples of both, otherwise the number as a string. What is fizzbuzz(15)[-1]?"
+    expected_output: "FizzBuzz"
+    scoring_method: contains
+    timeout_seconds: 90
+    skill_nodes: [coding.generation]
+
+  - id: l4_test_001
+    name: Write Unit Test
+    tier: 4
+    category: coding
+    prompt: |
+      Given this function:
+
+      def is_palindrome(s: str) -> bool:
+          cleaned = s.lower().replace(" ", "")
+          return cleaned == cleaned[::-1]
+
+      Write 3 pytest test cases that test: a palindrome, a non-palindrome, and an edge case. Show the test code.
+    expected_output: "def test_"
+    scoring_method: contains
+    scoring_config:
+      required_substrings: ["def test_", "assert"]
+    timeout_seconds: 90
+    skill_nodes: [coding.testing]
+
+  # ╔══════════════════════════════════════════════════════════════╗
+  # ║  L5: Self-Modification / Meta — prompt engineering, meta   ║
+  # ╚══════════════════════════════════════════════════════════════╝
+
+  - id: l5_prompt_001
+    name: Prompt Improvement
+    tier: 5
+    category: meta
+    prompt: |
+      Here is a system prompt for an AI assistant:
+      "You are an AI. Answer questions."
+
+      This prompt is too vague. Rewrite it to be a better system prompt that would make the AI more helpful, specific, and structured. Your rewritten prompt should be at least 3 sentences long.
+    expected_output: ""
+    scoring_method: llm_judge
+    scoring_config:
+      judge_criteria: "Does the rewritten prompt provide clear role definition, specific behavioral guidelines, and is it significantly better than the original? Score 0-1."
+    timeout_seconds: 120
+    skill_nodes: [meta.prompt_writing]
+
+  - id: l5_meta_001
+    name: Self-Assessment
+    tier: 5
+    category: meta
+    prompt: "Analyze your own capabilities. List 3 things you are good at and 3 things you could improve. Be specific and honest. For each weakness, suggest a concrete improvement strategy."
+    expected_output: ""
+    scoring_method: llm_judge
+    scoring_config:
+      judge_criteria: "Does the response show genuine self-awareness with specific, actionable improvements rather than generic statements? Score 0-1."
+    timeout_seconds: 120
+    skill_nodes: [meta.self_improvement]
+
+  - id: l5_meta_002
+    name: Strategy Planning
+    tier: 5
+    category: meta
+    prompt: "You are about to be evaluated on reasoning, coding, and tool use tasks. Design a strategy for how you would approach unknown tasks in each category. Be specific about your step-by-step method for each category."
+    expected_output: ""
+    scoring_method: llm_judge
+    scoring_config:
+      judge_criteria: "Does the strategy show structured thinking with concrete, category-specific approaches rather than generic advice? Score 0-1."
+    timeout_seconds: 120
+    skill_nodes: [meta.self_improvement, meta.prompt_writing]
